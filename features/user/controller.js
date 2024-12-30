@@ -96,6 +96,26 @@ class controller {
     }
   };
 
+  static getLoggedin = async (req, res) => {
+    try {
+      console.log("hello");
+      let result = req.user;
+
+      return successResponse({
+        res,
+        statusCode: 200,
+        data: result,
+        message: "Document fetched successfully",
+      });
+    } catch (error) {
+      return errorResponse({
+        res,
+        error,
+        funName: "getUser",
+      });
+    }
+  };
+
   static patch = async (req, res) => {
     const { id } = req.params;
 
@@ -152,7 +172,7 @@ class controller {
     try {
       const token = await generateToken({ userId: req.user._id });
 
-      const link = `${CLIENT_URL}/reset-password/${token}`;
+      const link = `${CLIENT_URL}/auth/reset-password/${token}`;
 
       await sendMail({
         to: req.user.email,

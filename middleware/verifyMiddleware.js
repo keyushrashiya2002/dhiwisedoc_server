@@ -26,8 +26,7 @@ export const verifyUser = async (req, res, next) => {
       "-password -createdAt -updatedAt -__v"
     );
 
-    if (!user || !user.isActive)
-      return validateResponse(res, AuthErrorObj, 403);
+    if (!user) return validateResponse(res, AuthErrorObj, 403);
 
     req.user = user;
 
