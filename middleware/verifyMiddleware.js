@@ -3,7 +3,7 @@ import { validateResponse } from "../helper/apiResponse.js";
 
 import { verifyToken } from "../helper/jwtToken.js";
 
-const AuthErrorObj = {
+export const AuthErrorObj = {
   details: [
     {
       path: "message",
@@ -23,7 +23,7 @@ export const verifyUser = async (req, res, next) => {
     const { userId } = await verifyToken(authorization.split(" ")[1]);
 
     let user = await UserModel.findById(userId).select(
-      "-password -createdAt -updatedAt"
+      "-password -createdAt -updatedAt -__v"
     );
 
     if (!user || !user.isActive)

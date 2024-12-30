@@ -29,6 +29,7 @@ connectDb(DATABASE_URL);
 
 // Public Routes
 app.use(decryptDataFun);
+app.use("/api/user", route.userRoute);
 
 // Static
 app.use("/file", express.static(join(process.cwd(), "uploads")));

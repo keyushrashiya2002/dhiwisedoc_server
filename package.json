@@ -21,6 +21,7 @@
   "homepage": "https://github.com/keyushrashiya2002/dhiwisedoc_server#readme",
   "description": "",
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "crypto-js": "^4.2.0",
