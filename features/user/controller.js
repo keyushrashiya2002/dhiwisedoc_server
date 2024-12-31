@@ -17,10 +17,7 @@ class controller {
       if (user) {
         return errorResponse({
           res,
-          funName: "user::register",
-          error: new Error("Email is already taken or not available"),
-          message: "Email is already taken or not available",
-          statusCode: 400,
+          message: `Email is already taken or not available`,
         });
       }
       const hashPassword = await bcryptPassword(password);
@@ -117,16 +114,15 @@ class controller {
   };
 
   static patch = async (req, res) => {
-    const { id } = req.params;
-
+    console.log(req.user._id);
     try {
       let result = await UserModel.findByIdAndUpdate(
-        id,
+        req.user._id,
         {
           $set: req.body,
         },
         { new: true }
-      ).select("-password");
+      ).select("-password -createdAt -updatedAt -__v");
 
       return successResponse({
         res,

@@ -41,31 +41,13 @@ route.post(
   controller.forgotPassword
 );
 
+route.patch("/", verifyUser, validate.patch, controller.patch);
+
 route.patch(
   "/changepassword",
   verifyUser,
   validate.changePassword,
   controller.changePassword
-);
-
-route.patch(
-  "/:id",
-  verifyUser,
-  checkAuthorization({
-    permission: permissions.PATCH_USER_PROFILE,
-    comparisonFn: ({ req }) => {
-      const { role, _id } = req.user;
-
-      // Patch own profile for user
-      if (String(_id) === String(req.params.id)) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-  }),
-  validate.patch,
-  controller.patch
 );
 
 route.patch(
