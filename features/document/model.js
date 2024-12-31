@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const mongooseSchema = mongoose.Schema(
   {
-    title: { type: String, required: true },
-    html: { type: String },
+    title: { type: String, required: true, default: "Untitled document" },
+    html: { type: String, default: "" },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

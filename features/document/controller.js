@@ -32,6 +32,7 @@ class controller {
 
       const { skip, limit } = paginationFun(req.query);
       const result = await DocumentModel.find(filter)
+        .select("-html")
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 });

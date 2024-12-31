@@ -8,7 +8,7 @@ const options = {
 class validate {
   static create = async (req, res, next) => {
     const validateSchema = Joi.object().keys({
-      title: Joi.string().required(),
+      title: Joi.string().allow(""),
     });
     const { error } = validateSchema.validate(req.body, options);
     if (error) return validateResponse(res, error);
