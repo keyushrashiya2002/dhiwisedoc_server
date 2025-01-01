@@ -1,7 +1,9 @@
 import express from "express";
 import morgan from "morgan";
+import http from "http";
 import cors from "cors";
 import { join } from "path";
+import { Server } from "socket.io";
 
 import { DATABASE_URL, PORT } from "./config/env.js";
 import { connectDb } from "./helper/connectDb.js";
@@ -11,6 +13,16 @@ import * as route from "./router.js";
 
 // initialize server
 const app = express();
+const server = http.createServer(app);
+// Configure CORS for Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:8001", // Allow the frontend to connect from this port
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true, // Allow cookies if needed
+  },
+});
 
 // Body parser
 app.use(express.json({ limit: "50mb" }));
@@ -35,8 +47,31 @@ app.use("/api/document", route.documentRoute);
 // Static
 app.use("/file", express.static(join(process.cwd(), "uploads")));
 
+let users = {}; // To keep track of connected users and their positions
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
+
+  // When a user moves the cursor or edits the document
+  socket.on("cursorMove", (data) => {
+    users[socket.id] = {
+      userId: data.userId,
+      username: data.username,
+      cursor: data.cursor,
+    };
+    io.emit("updateCursors", users); // Send updated cursor positions to all clients
+  });
+
+  // When a user disconnects
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
+    delete users[socket.id]; // Remove the user when they disconnect
+    io.emit("updateCursors", users); // Update other clients with the change
+  });
+});
+
 // Start listing server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`start listening on port http://localhost:${PORT}`);
 });
 

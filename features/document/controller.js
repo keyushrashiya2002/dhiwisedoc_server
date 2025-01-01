@@ -27,7 +27,7 @@ class controller {
     try {
       const { title } = req.query;
 
-      let filter = {};
+      let filter = { user: req.user._id };
       if (title) filter.title = { $regex: title, $options: "i" };
 
       const { skip, limit } = paginationFun(req.query);

@@ -95,7 +95,6 @@ class controller {
 
   static getLoggedin = async (req, res) => {
     try {
-      console.log("hello");
       let result = req.user;
 
       return successResponse({
