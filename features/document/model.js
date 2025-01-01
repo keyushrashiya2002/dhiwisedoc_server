@@ -1,10 +1,24 @@
 import mongoose from "mongoose";
+import { documentUserTypeEnum } from "../../config/enum.js";
 
 const mongooseSchema = mongoose.Schema(
   {
     title: { type: String, required: true, default: "Untitled document" },
     html: { type: String, default: "" },
-    user: {
+    users: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        type: {
+          type: String,
+          enum: Object.values(documentUserTypeEnum),
+          default: documentUserTypeEnum.VIEWER,
+        },
+      },
+    ],
+    owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,

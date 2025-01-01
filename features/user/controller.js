@@ -72,6 +72,31 @@ class controller {
     }
   };
 
+  static get = async (req, res) => {
+    try {
+      const { text } = req.query;
+      const result = await UserModel.find({
+        $or: [
+          { username: { $regex: text, $options: "i" } },
+          { email: { $regex: text, $options: "i" } },
+        ],
+      }).select("username email _id");
+
+      return successResponse({
+        res,
+        statusCode: 200,
+        data: result,
+        message: "Document fetched successfully",
+      });
+    } catch (error) {
+      return errorResponse({
+        res,
+        error,
+        funName: "getUser",
+      });
+    }
+  };
+
   static getById = async (req, res) => {
     try {
       const { id } = req.params;
@@ -113,7 +138,6 @@ class controller {
   };
 
   static patch = async (req, res) => {
-    console.log(req.user._id);
     try {
       let result = await UserModel.findByIdAndUpdate(
         req.user._id,

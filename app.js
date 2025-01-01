@@ -10,6 +10,7 @@ import { connectDb } from "./helper/connectDb.js";
 import { decryptDataFun } from "./helper/cryptoFun.js";
 
 import * as route from "./router.js";
+import { verifyUser } from "./middleware/verifyMiddleware.js";
 
 // initialize server
 const app = express();
@@ -42,33 +43,59 @@ connectDb(DATABASE_URL);
 // Public Routes
 app.use(decryptDataFun);
 app.use("/api/user", route.userRoute);
+
+// Private Routes
+app.use(verifyUser);
 app.use("/api/document", route.documentRoute);
 
 // Static
 app.use("/file", express.static(join(process.cwd(), "uploads")));
 
-let users = {}; // To keep track of connected users and their positions
+const users = {}; // Store user data keyed by socket ID
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
+  console.log("A user connected");
+
+  // When a user joins a document (room)
+  socket.on("joinRoom", ({ roomId, userId, username }) => {
+    socket.join(roomId); // Join the specified room
+    console.log(`User ${username} joined room: ${roomId}`);
+    users[socket.id] = { userId, username, cursor: { x: 0, y: 0 }, roomId };
+    io.to(roomId).emit("updateCursors", getUsersInRoom(roomId));
+  });
 
   // When a user moves the cursor or edits the document
-  socket.on("cursorMove", (data) => {
-    users[socket.id] = {
-      userId: data.userId,
-      username: data.username,
-      cursor: data.cursor,
-    };
-    io.emit("updateCursors", users); // Send updated cursor positions to all clients
+  socket.on("cursorMove", ({ roomId, cursor }) => {
+    if (users[socket.id]) {
+      users[socket.id].cursor = cursor; // Update the user's cursor position
+      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Send updated cursor positions to the room
+    }
+  });
+
+  // When a user leaves a room
+  socket.on("leaveRoom", (roomId) => {
+    socket.leave(roomId);
+    console.log(`User ${users[socket.id]?.username} left room: ${roomId}`);
+    delete users[socket.id]; // Remove the user from the server's data
+    io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Update other clients in the room
   });
 
   // When a user disconnects
   socket.on("disconnect", () => {
-    console.log("user disconnected");
-    delete users[socket.id]; // Remove the user when they disconnect
-    io.emit("updateCursors", users); // Update other clients with the change
+    const user = users[socket.id];
+    if (user) {
+      const { roomId, username } = user;
+      console.log(`User ${username} disconnected from room: ${roomId}`);
+      delete users[socket.id]; // Remove the user from the server's data
+      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Update other clients in the room
+    }
   });
 });
+
+// Helper function to get all users in a room
+const getUsersInRoom = (roomId) => {
+  return Object.values(users).filter((user) => user.roomId === roomId);
+};
 
 // Start listing server
 server.listen(PORT, () => {

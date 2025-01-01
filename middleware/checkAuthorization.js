@@ -1,6 +1,6 @@
 import { errorResponse } from "../helper/apiResponse.js";
 
-const errorObj = {
+export const errorObj = {
   details: [
     {
       path: "message",

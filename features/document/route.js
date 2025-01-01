@@ -1,18 +1,19 @@
 import express from "express";
 import controller from "./controller.js";
 import validate from "./validate.js";
-import { verifyUser } from "../../middleware/verifyMiddleware.js";
-
 const route = express.Router();
 
-route.post("/", verifyUser, validate.create, controller.create);
+route.get("/", controller.get);
+route.get("/:id", controller.getDetails);
 
-route.get("/", verifyUser, controller.get);
+route.post("/", validate.create, controller.create);
+route.post("/users/:id", validate.addUser, controller.addUser);
 
-route.get("/:id", verifyUser, controller.getDetails);
+route.patch("/:id", validate.patch, controller.patch);
+route.patch("/users/:docId", validate.patchUser, controller.patchUser);
+route.patch("/remove/:id", controller.removeUser);
 
-route.patch("/:id", verifyUser, validate.patch, controller.patch);
-
-route.delete("/:id?", verifyUser, controller.delete);
+route.delete("/:id?", controller.delete);
+route.delete("/users/:docId/:id", controller.deleteUser);
 
 export default route;

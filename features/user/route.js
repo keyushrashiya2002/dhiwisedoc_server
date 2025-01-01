@@ -13,8 +13,9 @@ const route = express.Router();
 route.post("/register", validate.register, controller.register);
 route.post("/login", validate.login, controller.login);
 
-route.get("/loggedin", verifyUser, controller.getLoggedin);
 
+route.get("/", verifyUser, controller.get);
+route.get("/loggedin", verifyUser, controller.getLoggedin);
 route.get(
   "/:id",
   verifyUser,
