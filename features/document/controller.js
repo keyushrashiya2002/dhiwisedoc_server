@@ -13,7 +13,12 @@ class controller {
   static create = async (req, res) => {
     try {
       req.body.owner = req.user._id;
-      const result = await DocumentModel.create(req.body);
+      const create = await DocumentModel.create(req.body);
+
+      const result = await DocumentModel.findById(create._id).populate([
+        { path: "owner", select: "username email" },
+        { path: "users.userId", select: "username email" },
+      ]);
       return successResponse({
         res,
         statusCode: 201,
