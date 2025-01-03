@@ -9,12 +9,21 @@ import { isExist } from "../../helper/isExist.js";
 import { errorObj } from "../../middleware/checkAuthorization.js";
 import DocumentModel from "./model.js";
 
+export const updateDocumentContent = async (roomId, content) => {
+  await DocumentModel.findByIdAndUpdate(
+    roomId,
+    {
+      $set: { html: content },
+    },
+    { new: true }
+  );
+};
+
 class controller {
   static create = async (req, res) => {
     try {
       req.body.owner = req.user._id;
       const create = await DocumentModel.create(req.body);
-
       const result = await DocumentModel.findById(create._id).populate([
         { path: "owner", select: "username email" },
         { path: "users.userId", select: "username email" },
@@ -94,7 +103,7 @@ class controller {
 
       if (
         String(result.owner._id) !== String(req.user._id) &&
-        userIds.includes(String(req.user._id))
+        !userIds.includes(String(req.user._id))
       )
         return errorResponse({
           res,

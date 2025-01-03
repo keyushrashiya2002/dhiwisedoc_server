@@ -5,12 +5,13 @@ import cors from "cors";
 import { join } from "path";
 import { Server } from "socket.io";
 
-import { DATABASE_URL, PORT } from "./config/env.js";
+import { CLIENT_URL, DATABASE_URL, PORT } from "./config/env.js";
 import { connectDb } from "./helper/connectDb.js";
 import { decryptDataFun } from "./helper/cryptoFun.js";
 
 import * as route from "./router.js";
 import { verifyUser } from "./middleware/verifyMiddleware.js";
+import { updateDocumentContent } from "./features/document/controller.js";
 
 // initialize server
 const app = express();
@@ -18,7 +19,7 @@ const server = http.createServer(app);
 // Configure CORS for Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:8001", // Allow the frontend to connect from this port
+    origin: CLIENT_URL, // Allow the frontend to connect from this port
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"],
     credentials: true, // Allow cookies if needed
@@ -51,33 +52,74 @@ app.use("/api/document", route.documentRoute);
 // Static
 app.use("/file", express.static(join(process.cwd(), "uploads")));
 
-const users = {}; // Store user data keyed by socket ID
+const users = {}; // Store user data by socket ID
 
+/**
+ * Helper function to get all users in a room
+ * @param {string} roomId - The room ID
+ * @returns {object} Users in the room
+ */
+const getUsersInRoom = (roomId) => {
+  return Object.values(users).filter((user) => user.roomId === roomId);
+};
+
+// Socket.IO connection handling
 io.on("connection", (socket) => {
-  console.log("A user connected");
+  console.log("A user connected:", socket.id);
 
-  // When a user joins a document (room)
+  // When a user joins a room
   socket.on("joinRoom", ({ roomId, userId, username }) => {
-    socket.join(roomId); // Join the specified room
-    console.log(`User ${username} joined room: ${roomId}`);
+    if (!roomId || !userId || !username) {
+      console.error("Invalid joinRoom payload:", { roomId, userId, username });
+      return;
+    }
+
+    // Add user to room and track their data
+    socket.join(roomId);
     users[socket.id] = { userId, username, cursor: { x: 0, y: 0 }, roomId };
+
+    console.log(`User ${username} joined room ${roomId}`);
     io.to(roomId).emit("updateCursors", getUsersInRoom(roomId));
   });
 
-  // When a user moves the cursor or edits the document
+  // When a user moves their cursor
   socket.on("cursorMove", ({ roomId, cursor }) => {
     if (users[socket.id]) {
-      users[socket.id].cursor = cursor; // Update the user's cursor position
-      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Send updated cursor positions to the room
+      users[socket.id].cursor = cursor; // Update cursor position
+      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Notify all clients in the room
     }
+  });
+
+  let updateTimeout;
+  // When a user edits the document
+  socket.on("editorChange", ({ roomId, userId, content }) => {
+    if (!roomId || !userId || typeof content !== "string") {
+      console.error("Invalid editorChange payload:", {
+        roomId,
+        userId,
+        content,
+      });
+      return;
+    }
+
+    clearTimeout(updateTimeout);
+    updateTimeout = setTimeout(async () => {
+      await updateDocumentContent(roomId, content);
+      console.log("Debounced update saved to DB.");
+    }, 2000);
+
+    socket.to(roomId).emit("contentUpdate", { userId, content });
   });
 
   // When a user leaves a room
   socket.on("leaveRoom", (roomId) => {
-    socket.leave(roomId);
-    console.log(`User ${users[socket.id]?.username} left room: ${roomId}`);
-    delete users[socket.id]; // Remove the user from the server's data
-    io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Update other clients in the room
+    const user = users[socket.id];
+    if (user && user.roomId === roomId) {
+      delete users[socket.id]; // Remove the user from the server's data
+      socket.leave(roomId);
+      console.log(`User ${user.username} left room ${roomId}`);
+      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Notify all clients in the room
+    }
   });
 
   // When a user disconnects
@@ -85,17 +127,12 @@ io.on("connection", (socket) => {
     const user = users[socket.id];
     if (user) {
       const { roomId, username } = user;
-      console.log(`User ${username} disconnected from room: ${roomId}`);
-      delete users[socket.id]; // Remove the user from the server's data
-      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Update other clients in the room
+      delete users[socket.id]; // Remove user data
+      console.log(`User ${username} disconnected from room ${roomId}`);
+      io.to(roomId).emit("updateCursors", getUsersInRoom(roomId)); // Notify all clients in the room
     }
   });
 });
-
-// Helper function to get all users in a room
-const getUsersInRoom = (roomId) => {
-  return Object.values(users).filter((user) => user.roomId === roomId);
-};
 
 // Start listing server
 server.listen(PORT, () => {
