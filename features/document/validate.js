@@ -32,7 +32,6 @@ class validate {
   };
 
   static addUser = async (req, res, next) => {
-    console.log("hello");
     const validateSchema = Joi.object().keys({
       users: Joi.array().required().min(1),
       type: Joi.string()

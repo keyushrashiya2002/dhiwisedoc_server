@@ -2,8 +2,6 @@ import dotenv from "dotenv";
 
 export const NODE_ENV = process.env.NODE_ENV;
 
-console.log({ NODE_ENV });
-
 if (NODE_ENV === "development") {
   dotenv.config({ path: ".env.dev" });
 } else if (NODE_ENV === "production") {
