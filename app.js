@@ -106,7 +106,7 @@ io.on("connection", (socket) => {
     updateTimeout = setTimeout(async () => {
       await updateDocumentContent(roomId, content);
       console.log("Debounced update saved to DB.");
-    }, 2000);
+    }, 3000);
 
     socket.to(roomId).emit("contentUpdate", { userId, content });
   });

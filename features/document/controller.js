@@ -1,4 +1,7 @@
-import { documentUserTypeWithRemoveEnum } from "../../config/enum.js";
+import {
+  documentUserTypeEnum,
+  documentUserTypeWithRemoveEnum,
+} from "../../config/enum.js";
 import {
   errorResponse,
   successResponse,
@@ -158,7 +161,13 @@ class controller {
     try {
       const doc = await isExist(res, id, DocumentModel);
 
-      if (String(doc.owner) !== String(req.user._id))
+      const canEdit = doc.users.find(
+        (user) =>
+          String(user.userId) === String(req.user._id) &&
+          user.type === documentUserTypeEnum.EDITOR
+      );
+
+      if (String(doc.owner) !== String(req.user._id) && !canEdit)
         return errorResponse({
           res,
           message: `You don't have permission to perform this action`,
@@ -170,7 +179,7 @@ class controller {
           $set: req.body,
         },
         { new: true }
-      );
+      ).select("title");
 
       return successResponse({
         res,
@@ -240,7 +249,14 @@ class controller {
     const { docId } = req.params;
     try {
       const document = await isExist(res, docId, DocumentModel);
-      if (String(req.user._id) !== String(document.owner)) {
+
+      const canEdit = document.users.find(
+        (user) =>
+          String(user.userId) === String(req.user._id) &&
+          user.type === documentUserTypeEnum.EDITOR
+      );
+
+      if (String(req.user._id) !== String(document.owner) && !canEdit) {
         return validateResponse(res, errorObj, 403);
       }
 
@@ -284,6 +300,18 @@ class controller {
   static removeUser = async (req, res) => {
     const { id } = req.params;
     try {
+      const document = await isExist(res, id, DocumentModel);
+
+      const canEdit = document.users.find(
+        (user) =>
+          String(user.userId) === String(req.user._id) &&
+          user.type === documentUserTypeEnum.EDITOR
+      );
+
+      if (String(req.user._id) !== String(document.owner) && !canEdit) {
+        return validateResponse(res, errorObj, 403);
+      }
+
       const result = await DocumentModel.findByIdAndUpdate(
         id,
         {

@@ -19,6 +19,7 @@ export const {
 
   JWT_SECRET_KEY,
   ENCRYPT_SECRET_KEY,
+  ENCRYPT_DATA,
 
   MAIL_HOST,
   MAIL_PORT,

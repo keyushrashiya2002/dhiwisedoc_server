@@ -1,7 +1,7 @@
-import { ENCRYPT_SECRET_KEY } from "../config/env.js";
+import { ENCRYPT_DATA, ENCRYPT_SECRET_KEY } from "../config/env.js";
 import CryptoJS from "crypto-js";
 
-const doEncrtpyData = false;
+const doEncrtpyData = ENCRYPT_DATA === "true";
 
 const secretKey = CryptoJS.enc.Utf8.parse(
   ENCRYPT_SECRET_KEY.padEnd(32, "0").substring(0, 32)
